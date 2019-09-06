@@ -42,18 +42,7 @@
 #include "i2c.h"
 #include "initilize.h"
 #include "gyro.h"
-
-int cntr;
-uint8_t data_ctrl1, address_ctrl1, address_status, data_status, receivedata;
-unsigned int x_value=0, y_value=0, z_value=0;
-uint8_t whoami=0, outtemp=0, STATUS_reg=0, FIFO_CTRL_reg=0, FIFO_SRC_reg=0, X_low=0, X_high=0, Y_low=0, Y_high=0, Z_low=0, Z_high=0, ctrl_reg1=0, ctrl_reg2=0, ctrl_reg3=0, ctrl_reg4=0, ctrl_reg5=0;
-uint8_t INT1_cfg, INT1_src, INT1_TSH_xh, INT1_TSH_xl, INT1_TSH_yh, INT1_TSH_yl, INT1_TSH_zh, INT1_TSH_zl ,INT1_duration, reference;
-uint8_t ctrl1 = 0x00, ctrl4 = 0x00;
-unsigned char I2C_transmit_buffer[32];
-unsigned char I2C_receive_buffer[32];
-unsigned char I2C_MAG_buffer[32];
-unsigned char I2C_ACC_status;
-unsigned char I2C_MAG_status;
+#include "acc_mag.h"
 
 SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
@@ -92,8 +81,6 @@ int main(void){
 	while(HAL_I2C_Master_Transmit_IT(&hi2c1,0x3C,I2C_transmit_buffer, 2)!= HAL_OK){}
 	while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY){}
 
-	whoami = 0;
-	cntr = 0;
 	rx_counter = 0;
 	rx_idle_counter = 0;
 	while (1){
