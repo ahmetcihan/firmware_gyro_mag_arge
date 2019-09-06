@@ -58,11 +58,6 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
-void MX_GPIO_Init(void);
-void MX_SPI1_Init(void);
-void MX_TIM2_Init(void);
-void MX_USART1_UART_Init(void);
-
 #define OKUMA_KOMUTU 	0x80
 #define WHO_AM_I		0x0F
 #define OUT_X_L			0x28
@@ -115,107 +110,10 @@ uint8_t L3GD20_Read ( uint8_t addr ){
 
 	 return data;
 }
-void MX_USART1_UART_Init(void){
-
-	huart1.Instance = USART1;
-	huart1.Init.BaudRate = 115200;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
-	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
-	huart1.Init.Mode = UART_MODE_TX_RX;
-	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-	huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-	if (HAL_UART_Init(&huart1) != HAL_OK){
-		_Error_Handler(__FILE__, __LINE__);
-	}
-	HAL_UART_Receive_IT(&huart1,&rx_byte,1);// Sending in normal mode
-
-}
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	rx_buffer[rx_counter++] = rx_byte;
 	rx_idle_counter = 0;
 	HAL_UART_Receive_IT(&huart1,&rx_byte,1);// Sending in normal mode
-}
-void MX_SPI1_Init(void){
-
-  /* SPI1 parameter configuration*/
-  hspi1.Instance = SPI1;
-  hspi1.Init.Mode = SPI_MODE_MASTER;
-  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
-  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
-  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
-  hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
-  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
-  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
-  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-  hspi1.Init.CRCPolynomial = 7;
-  hspi1.Init.CRCLength = SPI_CRC_LENGTH_DATASIZE;
-  hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
-  if (HAL_SPI_Init(&hspi1) != HAL_OK){
-    _Error_Handler(__FILE__, __LINE__);
-  }
-}
-void MX_TIM2_Init(void){
-
-  TIM_ClockConfigTypeDef sClockSourceConfig;
-  TIM_MasterConfigTypeDef sMasterConfig;
-
-  htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 31;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 149;
-  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV2;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
-  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-
-  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
-  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
-  {
-    _Error_Handler(__FILE__, __LINE__);
-  }
-}
-void MX_GPIO_Init(void){
-
-  GPIO_InitTypeDef GPIO_InitStruct;
-
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
-  __HAL_RCC_GPIOF_CLK_ENABLE();
-
-  /*Configure GPIO pins : PE3 PE8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_8 | GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : PC4 PC5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3|GPIO_PIN_8, GPIO_PIN_RESET);
-
 }
 void read_gyro_x(void){
 	X_low = L3GD20_Read ( OUT_X_L );
@@ -375,52 +273,6 @@ int main(void){
 			HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8); // bu LED!!
 
 		}
-
-		/*
-		//HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8); // bu LED!!
-
-		*/
-		/*
-		// other registers
-		// CTRL_REG1
-		ctrl_reg1 = L3GD20_Read ( CTRL_REG1 );
-		// CTRL_REG2
-		ctrl_reg2 = L3GD20_Read ( CTRL_REG2 );
-		// CTRL_REG3
-		ctrl_reg3=L3GD20_Read ( CTRL_REG3 );
-		//	CTRL_REG4
-		ctrl_reg4=L3GD20_Read ( CTRL_REG4 );
-		// CTRL_REG5
-		ctrl_reg5=L3GD20_Read ( CTRL_REG5 );
-		// REFERENCE
-		reference=L3GD20_Read ( REFERENCE );
-		// OUT_TEMP
-		outtemp = L3GD20_Read ( OUT_TEMP );
-		//STATUS_REG
-		STATUS_reg = L3GD20_Read ( STATUS_REG );
-		// FIFO_CTRL_REG
-		FIFO_CTRL_reg = L3GD20_Read ( FIFO_CTRL_REG );
-		//FIFO_SRC_REG
-		FIFO_SRC_reg = L3GD20_Read ( FIFO_SRC_REG );
-		//INT1_CFG
-		INT1_cfg = L3GD20_Read ( INT1_CFG );
-		//INT1_SRC
-		INT1_src = L3GD20_Read ( INT1_SRC );
-		//INT1_TSH_XH
-		INT1_TSH_xh = L3GD20_Read ( INT1_TSH_XH );
-		//INT1_TSH_XL
-		INT1_TSH_xl = L3GD20_Read ( INT1_TSH_XL );
-		//INT1_TSH_YH
-		INT1_TSH_yh = L3GD20_Read ( INT1_TSH_YH );
-		//INT1_TSH_YL
-		INT1_TSH_yl = L3GD20_Read ( INT1_TSH_YL );
-		//INT1_TSH_ZH
-		INT1_TSH_zh = L3GD20_Read ( INT1_TSH_ZH );
-		//INT1_TSH_ZL
-		INT1_TSH_zl = L3GD20_Read ( INT1_TSH_ZL );
-		//INT1_DURATION
-		INT1_duration = L3GD20_Read ( INT1_DURATION );
-		 */
 	}
 }
 
@@ -430,25 +282,4 @@ void _Error_Handler(char * file, int line)
   {
   }
 }
-
-#ifdef USE_FULL_ASSERT
-
-/**
-   * @brief Reports the name of the source file and the source line number
-   * where the assert_param error has occurred.
-   * @param file: pointer to the source file name
-   * @param line: assert_param error line source number
-   * @retval None
-   */
-void assert_failed(uint8_t* file, uint32_t line)
-{
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-    ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
-
-}
-
-#endif
-
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

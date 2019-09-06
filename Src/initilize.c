@@ -1,6 +1,10 @@
 #include "stm32f3xx_hal.h"
 #include "initilize.h"
 
+SPI_HandleTypeDef hspi1;
+TIM_HandleTypeDef htim2;
+UART_HandleTypeDef huart1;
+
 void SystemClock_Config(void){
 
 	RCC_OscInitTypeDef RCC_OscInitStruct;
@@ -50,10 +54,9 @@ void SystemClock_Config(void){
 
 	HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
-
-/*
 void MX_SPI1_Init(void){
-	SPI_HandleTypeDef hspi1;
+
+  /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
@@ -73,7 +76,6 @@ void MX_SPI1_Init(void){
   }
 }
 void MX_USART1_UART_Init(void){
-	UART_HandleTypeDef huart1;
 
 	huart1.Instance = USART1;
 	huart1.Init.BaudRate = 115200;
@@ -92,8 +94,6 @@ void MX_USART1_UART_Init(void){
 
 }
 void MX_TIM2_Init(void){
-	TIM_HandleTypeDef htim2;
-
   TIM_ClockConfigTypeDef sClockSourceConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
 
@@ -146,4 +146,3 @@ void MX_GPIO_Init(void){
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3|GPIO_PIN_8, GPIO_PIN_RESET);
 
 }
-*/
