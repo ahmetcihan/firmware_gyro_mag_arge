@@ -40,6 +40,7 @@
 #include "main.h"
 #include "stm32f3xx_hal.h"
 #include "i2c.h"
+#include "initilize.h"
 
 int cntr;
 uint8_t data_ctrl1, address_ctrl1, address_status, data_status, receivedata;
@@ -57,11 +58,10 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
-void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
-static void MX_SPI1_Init(void);
-static void MX_TIM2_Init(void);
-static void MX_USART1_UART_Init(void);
+void MX_GPIO_Init(void);
+void MX_SPI1_Init(void);
+void MX_TIM2_Init(void);
+void MX_USART1_UART_Init(void);
 
 #define OKUMA_KOMUTU 	0x80
 #define WHO_AM_I		0x0F
@@ -115,7 +115,7 @@ uint8_t L3GD20_Read ( uint8_t addr ){
 
 	 return data;
 }
-static void MX_USART1_UART_Init(void){
+void MX_USART1_UART_Init(void){
 
 	huart1.Instance = USART1;
 	huart1.Init.BaudRate = 115200;
@@ -138,7 +138,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	rx_idle_counter = 0;
 	HAL_UART_Receive_IT(&huart1,&rx_byte,1);// Sending in normal mode
 }
-static void MX_SPI1_Init(void){
+void MX_SPI1_Init(void){
 
   /* SPI1 parameter configuration*/
   hspi1.Instance = SPI1;
@@ -159,7 +159,7 @@ static void MX_SPI1_Init(void){
     _Error_Handler(__FILE__, __LINE__);
   }
 }
-static void MX_TIM2_Init(void){
+void MX_TIM2_Init(void){
 
   TIM_ClockConfigTypeDef sClockSourceConfig;
   TIM_MasterConfigTypeDef sMasterConfig;
@@ -188,7 +188,7 @@ static void MX_TIM2_Init(void){
     _Error_Handler(__FILE__, __LINE__);
   }
 }
-static void MX_GPIO_Init(void){
+void MX_GPIO_Init(void){
 
   GPIO_InitTypeDef GPIO_InitStruct;
 
