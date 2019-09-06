@@ -41,6 +41,7 @@
 #include "stm32f3xx_hal.h"
 #include "i2c.h"
 #include "initilize.h"
+#include "gyro.h"
 
 int cntr;
 uint8_t data_ctrl1, address_ctrl1, address_status, data_status, receivedata;
@@ -58,77 +59,10 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart1;
 
-#define OKUMA_KOMUTU 	0x80
-#define WHO_AM_I		0x0F
-#define OUT_X_L			0x28
-#define OUT_X_H			0x29
-#define OUT_Y_L			0x2A
-#define OUT_Y_H			0x2B
-#define OUT_Z_L			0x2C
-#define OUT_Z_H			0x2D
-#define CTRL_REG1		0x20
-#define CTRL_REG2		0x21
-#define CTRL_REG3		0x22
-#define CTRL_REG4		0x23
-#define CTRL_REG5		0x24
-#define REFERENCE		0x25
-#define OUT_TEMP		0x26
-#define STATUS_REG		0x27
-#define FIFO_CTRL_REG   0x2E
-#define FIFO_SRC_REG	0x2F
-#define INT1_CFG		0x30
-#define INT1_SRC		0x31
-#define INT1_TSH_XH		0x32
-#define INT1_TSH_XL		0x33
-#define INT1_TSH_YH		0x34
-#define INT1_TSH_YL		0x35
-#define INT1_TSH_ZH		0x36
-#define INT1_TSH_ZL		0x37
-#define INT1_DURATION	0x38
-
-uint8_t Test[] = "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 \n"; //Data to send
-
-void my_delay(unsigned int val){
-	for(unsigned int i = 0; i < val; i++){
-
-	}
-}
-uint8_t L3GD20_Read ( uint8_t addr ){
-	 uint8_t data;
-
-	 HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
-	 while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-	 uint8_t wrt = addr | OKUMA_KOMUTU;
-
-	 HAL_SPI_Transmit(&hspi1, &wrt, 1, 50);
-	 while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-
-	 HAL_SPI_Receive(&hspi1, &data, 1, 50);
-	 while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-
-	 HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
-
-	 return data;
-}
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	rx_buffer[rx_counter++] = rx_byte;
 	rx_idle_counter = 0;
 	HAL_UART_Receive_IT(&huart1,&rx_byte,1);// Sending in normal mode
-}
-void read_gyro_x(void){
-	X_low = L3GD20_Read ( OUT_X_L );
-	X_high = L3GD20_Read ( OUT_X_H );
-	x_value=(X_high * 256) + (X_low);
-}
-void read_gyro_y(void){
-	Y_low = L3GD20_Read ( OUT_Y_L );
-	Y_high = L3GD20_Read ( OUT_Y_H );
-	y_value=(Y_high * 256) + (Y_low);
-}
-void read_gyro_z(void){
-	Z_low = L3GD20_Read ( OUT_Z_L );
-	Z_high = L3GD20_Read ( OUT_Z_H );
-	z_value=(Z_high * 256) + (Z_low);
 }
 int main(void){
 	HAL_Init();
@@ -141,15 +75,7 @@ int main(void){
 	MX_TIM2_Init();
 	HAL_TIM_Base_Start_IT(&htim2);
 
-	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3, GPIO_PIN_RESET);
-	while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-	address_ctrl1 = CTRL_REG1;
-	data_ctrl1 = 0x0F;
-	HAL_SPI_Transmit(&hspi1, &address_ctrl1, 1, 50);
-	while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-	HAL_SPI_Transmit(&hspi1, &data_ctrl1, 1, 50);
-	while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
-	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3, GPIO_PIN_SET);
+	write_gyro_register(CTRL_REG1,0x0F);
 
 	I2C_transmit_buffer[0] = 0x20;
 	I2C_transmit_buffer[1] = 0x57;
@@ -184,7 +110,7 @@ int main(void){
 				if((rx_buffer[0] == 'C')&&(rx_buffer[1] == 'O')&&(rx_buffer[2] == 'N')&&(rx_buffer[3] == 'V')){
 					HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_9); // bu LED!!
 
-					STATUS_reg = L3GD20_Read ( STATUS_REG );
+					STATUS_reg = gyro_read( STATUS_REG );
 					if((STATUS_reg & 0x01) == 0x01){
 						read_gyro_x();
 					}

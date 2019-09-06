@@ -1,7 +1,6 @@
 #include "i2c.h"
 #include "gyro.h"
 
-/*
 SPI_HandleTypeDef hspi1;
 
 void read_gyro_x(void){
@@ -40,4 +39,3 @@ uint8_t gyro_read ( uint8_t addr ){
 
 	 return data;
 }
-*/
