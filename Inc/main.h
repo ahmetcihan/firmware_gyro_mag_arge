@@ -9,6 +9,7 @@ unsigned char rx_counter;
 unsigned char rx_buffer[32];
 unsigned char tx_buffer[32];
 unsigned int rx_idle_counter;
+unsigned char robust_opening;
 
 void _Error_Handler(char *, int);
 

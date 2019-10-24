@@ -73,26 +73,20 @@ void usart_response(void){
 	HAL_UART_Transmit_IT(&huart1,tx_buffer,26);
 }
 int main(void){
+	static char opening_counter = 0;
+
 	HAL_Init();
 	SystemClock_Config();
 
 	MX_GPIO_Init();
 	MX_I2C1_Init();
-	MX_USART1_UART_Init();
 	MX_SPI1_Init();
 	MX_TIM2_Init();
 	HAL_TIM_Base_Start_IT(&htim2);
 
-	write_gyro_register(CTRL_REG1,0x0F);
-	write_gyro_register(CTRL_REG1,0x0F);
-	write_acc_mag(0x32,0x20,0x57);
-	write_acc_mag(0x32,0x23,0x00);
-	write_acc_mag(0x3C,0x00,0x1C);
-	write_acc_mag(0x3C,0x01,0xE0);
-	write_acc_mag(0x3C,0x02,0x00);
-
 	rx_counter = 0;
 	rx_idle_counter = 0;
+	robust_opening = 0;
 	while (1){
 		if(_100_usec_counter > 999){
 			_100_usec_counter = 0;
@@ -101,62 +95,82 @@ int main(void){
 		if(_1_msec == 1){
 			_1_msec = 0;
 
-			rx_idle_counter++;
-			if(rx_idle_counter == 2){
-				rx_counter = 0;
-				if((rx_buffer[0] == 'C')&&(rx_buffer[1] == 'O')&&(rx_buffer[2] == 'N')&&(rx_buffer[3] == 'V')){
+			if(robust_opening == 1){
+				rx_idle_counter++;
+				if(rx_idle_counter == 2){
+					rx_counter = 0;
+					if((rx_buffer[0] == 'C')&&(rx_buffer[1] == 'O')&&(rx_buffer[2] == 'N')&&(rx_buffer[3] == 'V')){
 
-					STATUS_reg = gyro_read( STATUS_REG );
-					if((STATUS_reg & 0x01) == 0x01){
-						read_gyro_x();
-					}
-					if((STATUS_reg & 0x02) == 0x02){
-						read_gyro_y();
-					}
-					if((STATUS_reg & 0x04) == 0x04){
-						read_gyro_z();
-					}
+						STATUS_reg = gyro_read( STATUS_REG );
+						if((STATUS_reg & 0x01) == 0x01){
+							read_gyro_x();
+						}
+						if((STATUS_reg & 0x02) == 0x02){
+							read_gyro_y();
+						}
+						if((STATUS_reg & 0x04) == 0x04){
+							read_gyro_z();
+						}
 
-					read_acc_mag(0x33,0x27,&I2C_ACC_status);
+						read_acc_mag(0x33,0x27,&I2C_ACC_status);
 
-					if((I2C_ACC_status & 0x01) == 0x01){	//x axis
-						read_acc_mag(0x33,0x28,&I2C_ACC_buffer[0]);
-						read_acc_mag(0x33,0x29,&I2C_ACC_buffer[1]);
-					}
-					if((I2C_ACC_status & 0x02) == 0x02){	//y axis
-						read_acc_mag(0x33,0x2A,&I2C_ACC_buffer[2]);
-						read_acc_mag(0x33,0x2B,&I2C_ACC_buffer[3]);
-					}
-					if((I2C_ACC_status & 0x04) == 0x04){	//z axis
-						read_acc_mag(0x33,0x2C,&I2C_ACC_buffer[4]);
-						read_acc_mag(0x33,0x2D,&I2C_ACC_buffer[5]);
-					}
+						if((I2C_ACC_status & 0x01) == 0x01){	//x axis
+							read_acc_mag(0x33,0x28,&I2C_ACC_buffer[0]);
+							read_acc_mag(0x33,0x29,&I2C_ACC_buffer[1]);
+						}
+						if((I2C_ACC_status & 0x02) == 0x02){	//y axis
+							read_acc_mag(0x33,0x2A,&I2C_ACC_buffer[2]);
+							read_acc_mag(0x33,0x2B,&I2C_ACC_buffer[3]);
+						}
+						if((I2C_ACC_status & 0x04) == 0x04){	//z axis
+							read_acc_mag(0x33,0x2C,&I2C_ACC_buffer[4]);
+							read_acc_mag(0x33,0x2D,&I2C_ACC_buffer[5]);
+						}
 
-					read_acc_mag(0x3D,0x09,&I2C_MAG_status);
+						read_acc_mag(0x3D,0x09,&I2C_MAG_status);
 
-					if((I2C_MAG_status & 0x01) == 0x01){
-						read_acc_mag(0x3D,0x03,&I2C_MAG_buffer[0]);
-						read_acc_mag(0x3D,0x04,&I2C_MAG_buffer[1]);
-						read_acc_mag(0x3D,0x05,&I2C_MAG_buffer[2]);
-						read_acc_mag(0x3D,0x06,&I2C_MAG_buffer[3]);
-						read_acc_mag(0x3D,0x07,&I2C_MAG_buffer[4]);
-						read_acc_mag(0x3D,0x08,&I2C_MAG_buffer[5]);
+						if((I2C_MAG_status & 0x01) == 0x01){
+							read_acc_mag(0x3D,0x03,&I2C_MAG_buffer[0]);
+							read_acc_mag(0x3D,0x04,&I2C_MAG_buffer[1]);
+							read_acc_mag(0x3D,0x05,&I2C_MAG_buffer[2]);
+							read_acc_mag(0x3D,0x06,&I2C_MAG_buffer[3]);
+							read_acc_mag(0x3D,0x07,&I2C_MAG_buffer[4]);
+							read_acc_mag(0x3D,0x08,&I2C_MAG_buffer[5]);
+						}
+						else{
+							HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_9); // bu LED!!
+
+						}
+
+						usart_response();
 					}
-					else{
-						HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_9); // bu LED!!
-
+					for(unsigned char i = 0; i < 32; i++){
+						rx_buffer[i] = 0;
 					}
-
-					usart_response();
-				}
-				for(unsigned char i = 0; i < 32; i++){
-					rx_buffer[i] = 0;
 				}
 			}
 		}
 		if(_100_msec == 1){
 			_100_msec = 0;
 			HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8); // bu LED!!
+			if(robust_opening == 0){
+				opening_counter++;
+				if(opening_counter == 16){
+					write_gyro_register(CTRL_REG1,0x0F);
+					write_gyro_register(CTRL_REG1,0x0F);
+					write_acc_mag(0x32,0x20,0x57);
+					write_acc_mag(0x32,0x23,0x00);
+					write_acc_mag(0x3C,0x00,0x1C);
+					write_acc_mag(0x3C,0x01,0xE0);
+					write_acc_mag(0x3C,0x02,0x00);
+
+				}
+				if(opening_counter > 19){
+					MX_USART1_UART_Init();
+
+					robust_opening = 1;
+				}
+			}
 		}
 	}
 }
