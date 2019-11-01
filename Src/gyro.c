@@ -15,6 +15,13 @@ void read_gyro_z(void){
 	Z_low = gyro_read ( OUT_Z_L );
 	Z_high = gyro_read ( OUT_Z_H );
 }
+void my_wait(unsigned int val){
+	unsigned int i;
+
+	for(i = 0; i< val; i++){
+		i = i;
+	}
+}
 void write_gyro_register(unsigned char address,unsigned char data){
 	HAL_GPIO_WritePin(GPIOE,GPIO_PIN_3, GPIO_PIN_RESET);
 	while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
@@ -26,10 +33,9 @@ void write_gyro_register(unsigned char address,unsigned char data){
 }
 uint8_t gyro_read ( uint8_t addr ){
 	 uint8_t wrt = addr | OKUMA_KOMUTU;
-	 uint8_t data;
+	 uint8_t data = 0xFF;
 
 	 HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_RESET);
-
 	 while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}
 	 HAL_SPI_Transmit(&hspi1, &wrt, 1, 1);
 	 while (HAL_SPI_GetState(&hspi1) != HAL_SPI_STATE_READY){}

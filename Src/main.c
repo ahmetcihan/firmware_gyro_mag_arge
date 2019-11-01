@@ -74,6 +74,9 @@ void usart_response(void){
 }
 int main(void){
 	static char opening_counter = 0;
+	static char wr_tmp = 0;
+	static char read_spi = 0;
+	static char read_spi_tmp = 0;
 
 	HAL_Init();
 	SystemClock_Config();
@@ -96,53 +99,76 @@ int main(void){
 			_1_msec = 0;
 
 			if(robust_opening == 1){
+				if(read_spi == 1){
+					switch(read_spi_tmp){
+					case 0:
+						STATUS_reg = gyro_read( STATUS_REG );
+						read_spi_tmp++;
+						break;
+					case 1:
+						if((STATUS_reg & 0x01) == 0x01){
+							read_gyro_x();
+						}
+						read_spi_tmp++;
+						break;
+					case 2:
+						if((STATUS_reg & 0x02) == 0x02){
+							read_gyro_y();
+						}
+						read_spi_tmp++;
+						break;
+					case 3:
+						if((STATUS_reg & 0x04) == 0x04){
+							read_gyro_z();
+						}
+						read_spi_tmp++;
+						break;
+					case 4:
+						usart_response();
+						read_spi_tmp++;
+						break;
+					case 5:
+						read_spi = 0;
+						read_spi_tmp = 0;
+						break;
+					}
+				}
 				rx_idle_counter++;
 				if(rx_idle_counter == 2){
 					rx_counter = 0;
 					if((rx_buffer[0] == 'C')&&(rx_buffer[1] == 'O')&&(rx_buffer[2] == 'N')&&(rx_buffer[3] == 'V')){
+						read_spi = 1;
 
-						STATUS_reg = gyro_read( STATUS_REG );
-						if((STATUS_reg & 0x01) == 0x01){
-							read_gyro_x();
-						}
-						if((STATUS_reg & 0x02) == 0x02){
-							read_gyro_y();
-						}
-						if((STATUS_reg & 0x04) == 0x04){
-							read_gyro_z();
-						}
+//						read_acc_mag(0x33,0x27,&I2C_ACC_status);
+//
+//						if((I2C_ACC_status & 0x01) == 0x01){	//x axis
+//							read_acc_mag(0x33,0x28,&I2C_ACC_buffer[0]);
+//							read_acc_mag(0x33,0x29,&I2C_ACC_buffer[1]);
+//						}
+//						if((I2C_ACC_status & 0x02) == 0x02){	//y axis
+//							read_acc_mag(0x33,0x2A,&I2C_ACC_buffer[2]);
+//							read_acc_mag(0x33,0x2B,&I2C_ACC_buffer[3]);
+//						}
+//						if((I2C_ACC_status & 0x04) == 0x04){	//z axis
+//							read_acc_mag(0x33,0x2C,&I2C_ACC_buffer[4]);
+//							read_acc_mag(0x33,0x2D,&I2C_ACC_buffer[5]);
+//						}
 
-						read_acc_mag(0x33,0x27,&I2C_ACC_status);
+//						read_acc_mag(0x3D,0x09,&I2C_MAG_status);
+//
+//						if((I2C_MAG_status & 0x01) == 0x01){
+//							read_acc_mag(0x3D,0x03,&I2C_MAG_buffer[0]);
+//							read_acc_mag(0x3D,0x04,&I2C_MAG_buffer[1]);
+//							read_acc_mag(0x3D,0x05,&I2C_MAG_buffer[2]);
+//							read_acc_mag(0x3D,0x06,&I2C_MAG_buffer[3]);
+//							read_acc_mag(0x3D,0x07,&I2C_MAG_buffer[4]);
+//							read_acc_mag(0x3D,0x08,&I2C_MAG_buffer[5]);
+//						}
+//						else{
+//							HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_9); // bu LED!!
+//
+//						}
 
-						if((I2C_ACC_status & 0x01) == 0x01){	//x axis
-							read_acc_mag(0x33,0x28,&I2C_ACC_buffer[0]);
-							read_acc_mag(0x33,0x29,&I2C_ACC_buffer[1]);
-						}
-						if((I2C_ACC_status & 0x02) == 0x02){	//y axis
-							read_acc_mag(0x33,0x2A,&I2C_ACC_buffer[2]);
-							read_acc_mag(0x33,0x2B,&I2C_ACC_buffer[3]);
-						}
-						if((I2C_ACC_status & 0x04) == 0x04){	//z axis
-							read_acc_mag(0x33,0x2C,&I2C_ACC_buffer[4]);
-							read_acc_mag(0x33,0x2D,&I2C_ACC_buffer[5]);
-						}
-
-						read_acc_mag(0x3D,0x09,&I2C_MAG_status);
-
-						if((I2C_MAG_status & 0x01) == 0x01){
-							read_acc_mag(0x3D,0x03,&I2C_MAG_buffer[0]);
-							read_acc_mag(0x3D,0x04,&I2C_MAG_buffer[1]);
-							read_acc_mag(0x3D,0x05,&I2C_MAG_buffer[2]);
-							read_acc_mag(0x3D,0x06,&I2C_MAG_buffer[3]);
-							read_acc_mag(0x3D,0x07,&I2C_MAG_buffer[4]);
-							read_acc_mag(0x3D,0x08,&I2C_MAG_buffer[5]);
-						}
-						else{
-							HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_9); // bu LED!!
-
-						}
-
-						usart_response();
 					}
 					for(unsigned char i = 0; i < 32; i++){
 						rx_buffer[i] = 0;
@@ -155,14 +181,39 @@ int main(void){
 			HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_8); // bu LED!!
 			if(robust_opening == 0){
 				opening_counter++;
-				if(opening_counter == 16){
-					write_gyro_register(CTRL_REG1,0x0F);
-					write_gyro_register(CTRL_REG1,0x0F);
-					write_acc_mag(0x32,0x20,0x57);
-					write_acc_mag(0x32,0x23,0x00);
-					write_acc_mag(0x3C,0x00,0x1C);
-					write_acc_mag(0x3C,0x01,0xE0);
-					write_acc_mag(0x3C,0x02,0x00);
+				if(opening_counter > 10){
+					//write_gyro_register(CTRL_REG1,0x0F);
+					switch(wr_tmp){
+					case 0:
+						write_gyro_register(CTRL_REG1,0x0F);
+						wr_tmp++;
+						break;
+					case 1:
+						write_gyro_register(CTRL_REG1,0x0F);
+						wr_tmp++;
+						break;
+					case 2:
+						write_gyro_register(CTRL_REG2,0x00);
+						wr_tmp++;
+						break;
+					case 3:
+						write_gyro_register(CTRL_REG3,0x00);
+						wr_tmp++;
+						break;
+					case 4:
+						write_gyro_register(CTRL_REG4,0x00);
+						wr_tmp++;
+						break;
+					case 5:
+						write_gyro_register(CTRL_REG5,0x00);
+						wr_tmp++;
+						break;
+					}
+//					write_acc_mag(0x32,0x20,0x37);
+//					write_acc_mag(0x32,0x23,0x00);
+//					write_acc_mag(0x3C,0x00,0x1C);
+//					write_acc_mag(0x3C,0x01,0xE0);
+//					write_acc_mag(0x3C,0x02,0x00);
 
 				}
 				if(opening_counter > 19){
