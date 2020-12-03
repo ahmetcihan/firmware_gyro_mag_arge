@@ -185,15 +185,15 @@ int main(void){
 					//write_gyro_register(CTRL_REG1,0x0F);
 					switch(wr_tmp){
 					case 0:
-						write_gyro_register(CTRL_REG1,0x0F);
+						write_gyro_register(CTRL_REG1,0x1F);
 						wr_tmp++;
 						break;
 					case 1:
-						write_gyro_register(CTRL_REG1,0x0F);
+						write_gyro_register(CTRL_REG1,0x1F);
 						wr_tmp++;
 						break;
 					case 2:
-						write_gyro_register(CTRL_REG2,0x00);
+						write_gyro_register(CTRL_REG2,0x29);
 						wr_tmp++;
 						break;
 					case 3:
@@ -205,7 +205,7 @@ int main(void){
 						wr_tmp++;
 						break;
 					case 5:
-						write_gyro_register(CTRL_REG5,0x00);
+						write_gyro_register(CTRL_REG5,0x10);
 						wr_tmp++;
 						break;
 					}
